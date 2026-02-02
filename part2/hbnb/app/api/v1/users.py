@@ -19,8 +19,9 @@ class UserList(Resource):
         users_list = [
             {'id': user.id, 'first_name': user.first_name, 'last_name': user.last_name}
             for user in users
-        ]
+            ]
         return users_list, 200
+
 
     @api.expect(user_model, validate=True)
     @api.response(201, 'User successfully created')

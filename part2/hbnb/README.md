@@ -114,7 +114,58 @@ Entity Relationships:
 - Place & Amenity: A Place can be associated with multiple Amenities (many-to-many).
 
 
+---------------------------------------------------------------------------------------------------------------------------
 
+2. User Endpoints:
+
+Implemented the Facade Pattern to manage communication between the API layers and Business logic endpoints needed for managing users in the HBNB application.
+Created full CRUD (Create, Read, Update) functionality for Users, including email uniqueness and structured data responses.
+
+API Endpoints for Users:
+POST: /api/v1/users/      -->  Register a new user
+GET:  /api/v1/users/      -->  List all users
+GET:  /api/v1/users/<id>  -->  Get specific user details
+PUT:  /api/v1/users/<id>  -->  Update user information
+
+How to Run and Test:
+
+- Start the Flask Server:
+python run.py
+
+- Access Swagger Documentation:
+Open your browser and navigate to http://127.0.0.1:5000/api/v1/. 
+Use the interactive UI to test the endpoints.
+
+- Testing with Postman:
+Set headers to Content-Type: application/json.
+Use the provided endpoints above to verify JSON responses and status codes (200, 201, 400, 404).
+
+
+
+---------------------------------------------------------------------------------------------------------------------------
+3. Amenity Endpoints:
+
+Implemented the Facade Pattern to manage communication between the API layers and Business logic endpoints needed for managing Amenities in the HBNB application.
+Created full CRUD (Create, Read, Update) functionality for Amenities.
+
+API Endpoints for Amenities:
+POST: /api/v1/amenities/      -->  Register a new amenity
+GET:  /api/v1/amenities/      -->  List all amenities
+GET:  /api/v1/amenities/<id>  -->  Get specific amenity
+PUT:  /api/v1/amenities/<id>  -->  Update amenity information
+
+How to Run and Test:
+
+- Start the Flask Server:
+python run.py
+
+- Access Swagger Documentation:
+Open your browser and navigate to http://127.0.0.1:5000/api/v1/. 
+Use the interactive UI to test the endpoints.
+
+- Testing with Postman:
+Set headers to Content-Type: application/json.
+Use the provided endpoints above to verify JSON responses and status codes (200, 201, 400, 404).
 
 
 
