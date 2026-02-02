@@ -1,3 +1,7 @@
+
+
+0. Project Setup and Package Initialization
+
 Instructions:
 
 1. Create the Project Directory Structure:
@@ -87,6 +91,31 @@ pip install -r requirements.txt
 Run the application to ensure everything is set up correctly.
 
 python run.py
+
+------------------------------------------------------------------------------------------------------------
+
+
+1. Core Business Logic Layer
+
+The Business Logic layer is the core of the HBnB application. It handles data validation,
+manages relationships between entities, and ensures the integrity of the application's rules.
+
+Core Entities:
+All business entities inherit from a BaseModel to ensure consistency. Each object is uniquely identified by a UUID
+(Universally Unique Identifier) rather than a sequential ID to ensure global uniqueness and improved security.
+- User: Manages user information, including names, unique email addresses, and administrative privileges.
+- Place: Represents a rental listing. It tracks details like title, price, location coordinates, and maintains relationships with its owner, reviews, and amenities.
+- Review: Stores feedback provided by a User for a specific Place, including a rating (1-5).
+- Amenity: Represents features available at a Place, such as "Wi-Fi" or "Parking".
+
+Entity Relationships:
+- User & Place: A User can own multiple Place instances (one-to-many).
+- Place & Review: A Place can have multiple Review instances associated with it (one-to-many).
+- Place & Amenity: A Place can be associated with multiple Amenities (many-to-many).
+
+
+
+
 
 
 
