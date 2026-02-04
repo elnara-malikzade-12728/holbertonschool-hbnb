@@ -1,6 +1,7 @@
 from scripts.regsetup import description
 
 from app.models.place import Place
+from app.models.review import Review
 from app.persistence.repository import InMemoryRepository
 from app.models.user import User
 from app.models.amenity import Amenity
@@ -115,3 +116,39 @@ class HBnBFacade:
         place.longitude = place_data.get('longitude', place.longitude)
 
         return place
+
+    def create_review(self, review_data):
+        user = self.get_user(review_data['user_id'])
+        place = self.get_place(review_data['place_id'])
+        if not user or not place:
+           return None
+
+        new_review = Review(
+            text=review_data['text'],
+            rating=review_data['rating'],
+            user=user,
+            place=place
+        )
+        self.review_repo.add(new_review)
+        return new_review
+
+
+    def get_review(self, review_id):
+        return self.review_repo.get(review_id)
+
+    def get_all_reviews(self):
+        return self.review_repo.get_all()
+
+    def get_reviews_by_place(self, place_id):
+        return self.review_repo.get(place_id)
+
+    def update_review(self, review_id, review_data):
+        review = self.get_review(review_id)
+        if not review:
+            return None
+        review.text = review_data.get('text', review.text)
+        review.rating = review_data.get('rating', review.rating)
+        return review
+
+    def delete_review(self, review_id):
+        return self.review_repo.delete(review_id)
