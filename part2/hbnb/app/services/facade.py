@@ -1,5 +1,6 @@
 from scripts.regsetup import description
 
+from app.models.place import Place
 from app.persistence.repository import InMemoryRepository
 from app.models.user import User
 from app.models.amenity import Amenity
@@ -38,9 +39,6 @@ class HBnBFacade:
         user.last_name = user_data.get('last_name', user.last_name)
         user.email = user_data.get('email', user.email)
 
-        # Optional: If your repo requires an explicit update call
-        # self.user_repo.update(user_id, user)
-
         return user
 
     def create_amenity(self, amenity_data):
@@ -68,10 +66,52 @@ class HBnBFacade:
         amenity.name = amenity_data.get('name', amenity.name)
         return amenity
 
+    def create_place(self, place_data):
+        """Create a new place and add it to the repository"""
+        # Ensure you are fetching the owner object first!
+        owner = self.get_user(place_data['owner_id'])
+        if not owner:
+            return None
+
+        new_place = Place(
+            title=place_data['title'],
+            description=place_data.get('description'),
+            price=place_data['price'],
+            latitude=place_data['latitude'],
+            longitude=place_data['longitude'],
+            owner=owner
+        )
+        # Logic to link amenities
+        amenity_ids = place_data.get('amenities', [])
+        if isinstance(amenity_ids, list):
+            for aid in amenity_ids:
+                amenity_obj = self.get_amenity(aid)
+                if amenity_obj:
+                    new_place.add_amenity(amenity_obj)
+                else:
+                    print(f"Warning: Amenity {aid} not found in repo")
+
+        self.place_repo.add(new_place)
+        return new_place
 
 
-
-    # Placeholder method for fetching a place by ID
     def get_place(self, place_id):
-        # Logic will be implemented in later tasks
-        pass
+        """Get a place by id"""
+        return self.place_repo.get(place_id)
+
+    def get_all_places(self):
+        """Get all places from the repository"""
+        return self.place_repo.get_all()
+
+    def update_place(self, place_id, place_data):
+        """Update the place by id"""
+        place = self.get_place(place_id)
+        if not place:
+            return None
+        place.title = place_data.get('title', place.title)
+        place.description = place_data.get('description', place.description)
+        place.price = place_data.get('price', place.price)
+        place.latitude = place_data.get('latitude', place.latitude)
+        place.longitude = place_data.get('longitude', place.longitude)
+
+        return place

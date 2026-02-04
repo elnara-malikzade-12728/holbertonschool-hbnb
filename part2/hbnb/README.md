@@ -168,5 +168,22 @@ Set headers to Content-Type: application/json.
 Use the provided endpoints above to verify JSON responses and status codes (200, 201, 400, 404).
 
 
+-----------------------------------------------------------------------------------------------------------
 
+4. Place endpoints:
 
+Implemented the CRUD operations for the Place entity. The focus was on integrating the Presentation Layer (RESTful API) 
+with the Business Logic Layer using the Facade Pattern, ensuring that geographic coordinates and pricing are strictly validated.
+
+Key FeaturesPlace Creation:
+- Implemented POST /api/v1/places/ to register new accommodations, linking them to an existing owner (User).
+- Geographic Validation: Added strict constraints to ensure latitude is between -90 and 90, and longitude is between -180 and 180.
+- Financial Validation: Ensured that the price attribute is a non-negative float.
+- Relationship Handling: Updated the GET /api/v1/places/<place_id> endpoint to return nested objects for the Owner and a list of Amenities.
+- Facade Integration: All data flow is managed through the HBnBFacade to maintain a clean separation of concerns.
+
+API Endpoints for Place:
+POST: /api/v1/places/      --> Register a new place 201, 400
+GET:  /api/v1/places/      --> Retrieve all places  200
+GET:  /api/v1/places/<id>  --> Detailed view (inc. Owner & Amenities)200, 404
+PUT:  /api/v1/places/<id>  --> Update place details 200, 400, 404
