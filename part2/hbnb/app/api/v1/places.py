@@ -46,6 +46,10 @@ class PlaceList(Resource):
     def post(self):
         """Register a new place"""
         place_data = api.payload
+
+        if 'owner_id' not in place_data:
+            return {'error': 'Owner ID is required'}, 400
+        
         new_place = facade.create_place(place_data)
         if not new_place:
             return {'message': 'Invalid input data'}, 400

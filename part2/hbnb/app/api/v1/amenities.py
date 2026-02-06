@@ -20,6 +20,9 @@ class AmenityList(Resource):
         """Register a new amenity"""
         amenity_data = api.payload
 
+        if not amenity_data.get('name') or len(amenity_data.get('name').strip()) == 0:
+            return {"error": "Name is required"}, 400
+
         existing_amenity = facade.get_amenity(amenity_data['name'])
         if existing_amenity:
             return {'error': 'Amenity already exists!'}, 400
@@ -29,6 +32,7 @@ class AmenityList(Resource):
             'id': new_amenity.id,
             'name': new_amenity.name
         }, 201
+
 
     @api.response(200, 'List of amenities retrieved successfully')
     def get(self):
