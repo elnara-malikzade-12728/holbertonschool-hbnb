@@ -49,19 +49,17 @@ class PlaceList(Resource):
 
         if 'owner_id' not in place_data:
             return {'error': 'Owner ID is required'}, 400
-        
-        new_place = facade.create_place(place_data)
-        if not new_place:
-            return {'message': 'Invalid input data'}, 400
-        return {
-            'id': new_place.id,
-            'title': new_place.title,
-            'description': new_place.description,
-            'price': new_place.price,
-            'latitude': new_place.latitude,
-            'longitude': new_place.longitude,
-            'owner_id': new_place.owner.id if hasattr(new_place.owner, 'id') else new_place.owner_id
-        }, 201
+        try:
+            new_place = facade.create_place(place_data)
+            return {
+                'id': new_place.id,
+                'title': new_place.title,
+                'latitude': new_place.latitude,
+                'longitude': new_place.longitude,
+                'owner_id': new_place.owner.id
+            }, 201
+        except ValueError as e:
+            return {'error': str(e)}, 400
 
     @api.response(200, 'List of places retrieved successfully')
     def get(self):
@@ -111,8 +109,16 @@ class PlaceResource(Resource):
     def put(self, place_id):
         """Update a place's information"""
         place_data = api.payload
+        try:
+            updated_place = facade.update_place(place_id, place_data)
+            if not updated_place:
+                return {'error': 'Place not found'}, 404
+            return {
+                'id': updated_place.id,
+                'title': updated_place.title,
+                'description': updated_place.description,
+                'price': updated_place.price,
+            }, 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
 
-        updated_place = facade.update_place(place_id, place_data)
-        if not updated_place:
-            return {'error': 'Place not found'}, 404
-        return {'message': 'Place updated successfully'}, 200

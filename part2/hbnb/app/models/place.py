@@ -12,6 +12,18 @@ class Place(Basemodel):
         self.reviews = []    #List to store related reviews
         self.amenities = []  # List to store related amenities
 
+    # Inside your Place class
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        # Added condition for the title not to be empty
+        if not value or not value.strip():
+            raise ValueError("Title cannot be empty")
+        self._title = value
+
     @property
     def price(self):
         """Returns the price of the place"""

@@ -69,10 +69,11 @@ class HBnBFacade:
 
     def create_place(self, place_data):
         """Create a new place and add it to the repository"""
+
         # Ensure you are fetching the owner object first!
         owner = self.get_user(place_data['owner_id'])
         if not owner:
-            return None
+            raise ValueError("Owner not found")
 
         new_place = Place(
             title=place_data['title'],
@@ -109,11 +110,12 @@ class HBnBFacade:
         place = self.get_place(place_id)
         if not place:
             return None
-        place.title = place_data.get('title', place.title)
-        place.description = place_data.get('description', place.description)
-        place.price = place_data.get('price', place.price)
-        place.latitude = place_data.get('latitude', place.latitude)
-        place.longitude = place_data.get('longitude', place.longitude)
+        if 'title' in place_data:
+            place.title = place_data['title']
+        if 'description' in place_data:
+            place.description = place_data['description']
+        if 'price' in place_data:
+            place.price = place_data['price']
 
         return place
 

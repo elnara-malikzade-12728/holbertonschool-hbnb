@@ -147,8 +147,8 @@ Use the interactive UI to test the endpoints.
 Set headers to Content-Type: application/json.
 Use the provided endpoints above to verify JSON responses and status codes (200, 201, 400, 404).
 
-
-User Request body (POST)   -->   JSON
+************** VALID DATA *********************
+User Request body (POST)   -->   JSON               
 
 {
   "first_name": "John",
@@ -156,7 +156,30 @@ User Request body (POST)   -->   JSON
   "email": "john.doe@example.com"
 }
 
-User Request body (PUT )  --> JSON
+User Response Body (POST)
+
+{
+    "id": "3fc9a9cf-6b26-45b4-a26a-5eae5eadf24d",
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@example.com"
+}
+################# INVALID DATA ##################
+User Request Body (POST)   --> JSON
+{
+  "first_name": "",
+  "last_name": "Doe",
+  "email": "john.doe@example.com"
+}
+
+User Response Body (POST)
+
+{
+    "message": "First name is required"
+}
+
+****************** VALID DATA ******************
+User Request body (PUT)  --> JSON
 
 {
   "first_name": "Jane",
@@ -164,6 +187,30 @@ User Request body (PUT )  --> JSON
   "email": "jane.doe@example.com"
 }
 
+User Response Body (PUT)
+{
+    "id": "af5dd895-fb21-46da-82a9-e909b3e26fc1",
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "email": "jane.doe@example.com"
+}
+
+############ INVALID DATA ######################
+User Request Body (PUT)   --> JSON
+
+{
+  "first_name": "",
+  "last_name": "Doe",
+  "email": "jane.doe@example.com"
+}
+
+User Response Body (PUT)
+
+{
+    "error": "First name is required"
+}
+
+***************** VALID DATA *******************
 User Response Body (GET)  --> JSON
 
 [
@@ -175,6 +222,12 @@ User Response Body (GET)  --> JSON
   },
   ...
 ]
+
+User Response Body (GET)
+
+{
+    "error": "User not found"
+}
 
 ---------------------------------------------------------------------------------------------------------------------------
 
@@ -208,20 +261,52 @@ Use the interactive UI to test the endpoints.
 Set headers to Content-Type: application/json.
 Use the provided endpoints above to verify JSON responses and status codes (200, 201, 400, 404).
 
+***************** VALID DATA **********************
 Amenity Request Body (POST)  --> JSON
-
 {
   "name": "Wi-Fi"
 }
 
-Amenity Request Body (PUT)  -->  JSON
+Amenity Response Body (POST)
+{
+    "id": "c49c1b96-9c67-4c0b-8f21-8fdb9d54dcbd",
+    "name": "Wi-Fi"
+}
 
+################ INVALID DATA ######################
+Amenity Request Body (POST)   --> JSON
+{
+  "name": ""
+}
+
+Amenity Response Body (POST)
+{
+    "error": "Name is required"
+}
+
+*************** VALID DATA **************************
+Amenity Request Body (PUT)  -->  JSON
 {
   "name": "Air Conditioning"
 }
 
-Amenity Response Body (GET) --> JSON
+Amenity Response Body (PUT)
+{
+    "message": "Amenity updated successfully"
+}
+################# INVALID DATA #######################
+Amenity Request Body (PUT) --> JSON
+{
+  "name": ""
+}
 
+Amenity Response Body (PUT)
+{
+    "error": "Amenity not found"
+}
+
+**************** VALID DATA *********************
+Amenity Response Body (GET) --> JSON
 [
   {
     "id": "1fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -232,6 +317,12 @@ Amenity Response Body (GET) --> JSON
     "name": "Air Conditioning"
   }
 ]
+
+Amenity Response Body (GET)
+{
+    "error": "Amenity not found"
+}
+
 
 -----------------------------------------------------------------------------------------------------------
 
@@ -253,28 +344,140 @@ GET:  /api/v1/places/      --> Retrieve all places  200
 GET:  /api/v1/places/<id>  --> Detailed view (inc. Owner & Amenities)200, 404
 PUT:  /api/v1/places/<id>  --> Update place details 200, 400, 404
 
+How to Run and Test:
 
+- Start the Flask Server:
+python run.py
+
+- Access Swagger Documentation:
+Open your browser and navigate to http://127.0.0.1:5000/api/v1/. 
+Use the interactive UI to test the endpoints.
+
+- Testing with Postman:
+Set headers to Content-Type: application/json.
+Use the provided endpoints above to verify JSON responses and status codes (200, 201, 400, 404).
+
+**************** VALID DATA ************************
 Place Request Body (POST) -->  JSON
-
 {
   "title": "Cozy Apartment",
   "description": "A nice place to stay",
   "price": 100.0,
   "latitude": 37.7749,
   "longitude": -122.4194,
-  "owner_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  "owner_id": "5a71cf64-2352-4982-8bbf-b38873d36f43",
+  "amenities":["ab338ba3-e832-4ebe-a0aa-22b2e308811a"]
+  }
+
+Place Response Body (POST)
+{
+    "id": "607991a6-09e7-4efa-b5d8-2a3ab4ec80db",
+    "title": "Cozy Apartment",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "owner_id": "5a71cf64-2352-4982-8bbf-b38873d36f43"
+}
+############ INVALID DATA #####################
+Place Request Body (POST) -->  JSON
+{
+  "title": "Cozy Apartment",
+  "description": "A nice place to stay",
+  "price": 100.0,
+  "latitude": 101,
+  "longitude": -122.4194,
+  "owner_id": "5a71cf64-2352-4982-8bbf-b38873d36f43",
+  "amenities":["ab338ba3-e832-4ebe-a0aa-22b2e308811a"]
+  }
+
+Place Response Body (POST)
+{
+    "error": "Latitude must be between -90 and 90"
 }
 
-Place Request Body (PUT) --> JSON
+Place Request Body (POST) -->  JSON
+{
+  "title": "Cozy Apartment",
+  "description": "A nice place to stay",
+  "price": 100.0,
+  "latitude": 37.7749,
+  "longitude": -190,
+  "owner_id": "7018b32f-dd28-4c72-932d-0b3f22de93fd",
+  "amenities":["ab338ba3-e832-4ebe-a0aa-22b2e308811a"]
+  }
 
+Place Response Body (POST)
+{
+    "error": "Longitude must be between -180 and 180"
+}
+
+Place Request Body (POST) -->  JSON
+{
+  "title": "Cozy Apartment",
+  "description": "A nice place to stay",
+  "price": 100.0,
+  "latitude": 37.7749,
+  "longitude": -122.4194,
+  "owner_id": "",
+  "amenities":["ab338ba3-e832-4ebe-a0aa-22b2e308811a"]
+  }
+
+Place Response Body (POST)
+{
+    "error": "Owner not found"
+}
+
+*************** VALID DATA *******************
+Place Request Body (PUT) --> JSON
 {
   "title": "Luxury Condo",
   "description": "An upscale place to stay",
   "price": 200.0
 }
 
-Place Response Body (GET) --> JSON
+Place Response Body (PUT)
+{
+    "message": "Place updated successfully"
+}
 
+############## INVALID DATA ###################
+Place Request Body (PUT) --> JSON
+{
+  "title": "",
+  "description": "An upscale place to stay",
+  "price": 100
+}
+
+Place Response Body (PUT)
+{
+    "error": "Title can not be empty"
+}
+
+Place Request Body (PUT) --> JSON
+{
+  "title": "Luxury Condo",
+  "description": "",
+  "price": -20
+}
+
+Place Response Body (PUT)
+{
+    "error": "Place not found"
+}
+
+Place Request Body (PUT) --> JSON
+{
+  "title": "Luxury Condo",
+  "description": "An upscale place to stay",
+  "price": -20
+}
+
+Place Response Body (PUT)
+{
+    "error": "Price must be a non-negative float"
+}
+
+************** VALID DATA ***********************
+Place Response Body (GET) --> JSON
 [
   {
     "id": "1fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -284,8 +487,9 @@ Place Response Body (GET) --> JSON
   },
   ...
 ]
-
-
+{
+    "error": "Place not found"
+}
 ----------------------------------------------------------------------------------------------------------------------------------------
 
 5. Reviews Endpoints:
@@ -310,6 +514,19 @@ GET     /api/v1/reviews/      --> Retrieve all reviews       200
 GET     /api/v1/reviews/<id>  --> Retrieve review details    200, 404
 PUT     /api/v1/reviews/<id>  --> Update review text/rating  200, 400, 404
 DELETE  /api/v1/reviews/<id>  --> Remove a review            200, 404
+
+How to Run and Test:
+
+- Start the Flask Server:
+python run.py
+
+- Access Swagger Documentation:
+Open your browser and navigate to http://127.0.0.1:5000/api/v1/. 
+Use the interactive UI to test the endpoints.
+
+- Testing with Postman:
+Set headers to Content-Type: application/json.
+Use the provided endpoints above to verify JSON responses and status codes (200, 201, 400, 404).
 
 
 Review Request Body (POST)  --> JSON
