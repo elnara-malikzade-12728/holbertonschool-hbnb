@@ -8,6 +8,16 @@ class Review(Basemodel):
         self.place = place     # Reference  to the place
         self.user = user       # Reference to the user
 
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, value):
+        # Check if text is None, empty, or just spaces
+        if not value or not value.strip():
+            raise ValueError("Review text cannot be empty")
+        self._text = value
 
     @property
     def rating(self):

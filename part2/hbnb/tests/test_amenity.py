@@ -21,11 +21,12 @@ class TestAmenityEndpoints(unittest.TestCase):
         amenity_data = {
             "name": "WiFi"
         }
-        data = request.get_json()
-        if not data.get('name') or len(data.get('name').strip()) == 0:
-            return {"error": "Name is required"}, 400
+        # Just send the request to the client
         response = self.client.post('/api/v1/amenities/', json=amenity_data)
+
+        # Check if the server did its job
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.get_json()['name'], "WiFi")
 
     def test_create_amenity_invalid_data(self):
         """Test amenity creation with missing/invalid fields"""
@@ -37,7 +38,6 @@ class TestAmenityEndpoints(unittest.TestCase):
 
     def test_get_all_amenities(self):
         """Test retrieving the list of amenities"""
-        # FIX: Changed 'amenitie' to 'amenities'
         response = self.client.get('/api/v1/amenities/')
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.get_json(), list)

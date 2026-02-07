@@ -117,7 +117,7 @@ class PlaceResource(Resource):
                 'id': updated_place.id,
                 'title': updated_place.title,
                 'description': updated_place.description,
-                'price': updated_place.price,
+                'price': updated_place.price
             }, 200
         except ValueError as e:
             return {'error': str(e)}, 400

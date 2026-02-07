@@ -528,31 +528,119 @@ Use the interactive UI to test the endpoints.
 Set headers to Content-Type: application/json.
 Use the provided endpoints above to verify JSON responses and status codes (200, 201, 400, 404).
 
-
+*************** VALID DATA *********************
 Review Request Body (POST)  --> JSON
-
 {
-  "text": "Amazing stay! The host was very welcoming.",
+  "text": "Great place to stay!",
   "rating": 5,
-  "user_id": "user-uuid-string",
-  "place_id": "place-uuid-string"
+  "user_id": "bf8a1448-cdd2-4f2f-96dc-3c80b3849009",
+  "place_id": "ea745c55-edbb-426a-bed7-790b4982e439"
+}
+Review Response Body (POST)  --> JSON
+{
+    "id": "db28f79f-4961-4e61-a881-d132cc6c92e8",
+    "text": "Great place to stay!",
+    "rating": 5,
+    "user_id": "bf8a1448-cdd2-4f2f-96dc-3c80b3849009",
+    "place_id": "ea745c55-edbb-426a-bed7-790b4982e439"
+}
+################ INVALID DATA #######################
+Review Request Body (POST)  --> JSON
+{
+  "text": "Great place to stay!",
+  "rating": 5,
+  "user_id": "",
+  "place_id": "ea745c55-edbb-426a-bed7-790b4982e439"
 }
 
-Review Request Body (PUT) --> JSON
+Review Response Body (POST)  --> JSON
+{
+    "error": "Invalid User or Place ID"
+}
 
+Review Request Body (POST)  --> JSON
+{
+  "text": "Great place to stay!",
+  "rating": 5,
+  "user_id": "bf8a1448-cdd2-4f2f-96dc-3c80b3849009",
+  "place_id": ""
+}
+
+Review Response Body (POST)  --> JSON
+{
+    "error": "Invalid User or Place ID"
+}
+
+Review Request Body (POST)  --> JSON
+{
+  "text": "Great place to stay!",
+  "rating": 10,
+  "user_id": "143bc226-a5d6-415f-ade0-d2284a6b45b2",
+  "place_id": "d54e825b-1bd9-4143-9169-86bcff88995c"
+}
+
+Review Response Body (POST)  --> JSON
+{
+    "error": "Rating must be between 1 and 5"
+}
+*************** VALID DATA ********************
+Review Request Body (PUT) --> JSON
 {
   "text": "Amazing stay!",
   "rating": 4
 }
 
-Review Response (GET)   --> JSON
-
+Review Response Body (PUT) --> JSON
 {
-  "id": "review-uuid-string",
+    "message": "Review updated successfully"
+}
+################## INVALID DATA #####################
+Review Request Body (PUT) --> JSON
+{
+  "text": "",
+  "rating": 4
+}
+
+Review Response Body (PUT) --> JSON
+{
+    "error": "Review not found"
+}
+
+Review Request Body (PUT) --> JSON
+{
   "text": "Amazing stay!",
-  "rating": 5,
-  "user_id": "user-uuid-string",
-  "place_id": "place-uuid-string"
+  "rating": 7
+}
+
+Review Response Body (PUT) --> JSON
+{
+    "error": "Rating must be between 1 and 5"
+}
+#####################################################
+
+Review Response Body (GET)   --> JSON
+
+[
+    {
+        "id": "db28f79f-4961-4e61-a881-d132cc6c92e8",
+        "text": "Great place to stay!",
+        "rating": 5
+    },
+    {
+        "id": "22472d07-9651-42f7-b09b-82e9eb761481",
+        "text": "Great place to stay!",
+        "rating": 5
+    },
+    {
+        "id": "b82c9285-4aee-4b86-a593-0c2343ed4e0b",
+        "text": "Great place to stay!",
+        "rating": 5
+    }
+]
+
+Review Response Body (DELETE)
+{
+    "message": "Review deleted successfully"
 }
 
 Implementation Notes:

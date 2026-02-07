@@ -22,16 +22,20 @@ class ReviewList(Resource):
     def post(self):
         """Register a new review"""
         review_data = api.payload
-        new_review = facade.create_review(review_data)
-        if not new_review:
-            return {'message': 'Invalid input data'}, 400
-        return {
-            'id': new_review.id,
-            'text': new_review.text,
-            'rating': new_review.rating,
-            'user_id': new_review.user.id,
-            'place_id': new_review.place.id
-        }, 201
+        try:
+            new_review = facade.create_review(review_data)
+            if not new_review:
+                return {'error': 'Invalid User or Place ID'}, 400
+            return {
+                'id': new_review.id,
+                'text': new_review.text,
+                'rating': new_review.rating,
+                'user_id': new_review.user.id,
+                'place_id': new_review.place.id
+            }, 201
+        except ValueError as e:
+            # Catches invalid ratings (e.g., > 5) or empty text
+            return {'error': str(e)}, 400
 
     @api.response(200, 'List of reviews retrieved successfully')
     def get(self):
@@ -72,10 +76,13 @@ class ReviewResource(Resource):
     def put(self, review_id):
         """Update a review's information"""
         review_data = api.payload
-        updated_review = facade.update_review(review_id, review_data)
-        if not updated_review:
-            return {'message': 'Review not found'}, 404
-        return { 'message': 'Review updated successfully' }, 200
+        try:
+            updated_review = facade.update_review(review_id, review_data)
+            if not updated_review:
+                return {'error': 'Review not found'}, 404
+            return { 'message': 'Review updated successfully' }, 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
 
     @api.response(200, 'Review deleted successfully')
     @api.response(404, 'Review not found')
