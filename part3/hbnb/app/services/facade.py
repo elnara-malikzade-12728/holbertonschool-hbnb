@@ -36,7 +36,11 @@ class HBnBFacade:
 
     def get_user_by_email(self,email):
         """Get a user from the repository by email"""
-        return self.user_repo.get(email)
+        email = email.strip().lower()
+        for user in self.user_repo.get_all():
+            if user.email.strip().lower() == email:
+                return user
+        return None
 
     def get_all_users(self):
         """Get all users from the repository"""
