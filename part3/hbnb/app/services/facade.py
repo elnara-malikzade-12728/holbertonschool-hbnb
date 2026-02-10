@@ -1,5 +1,3 @@
-from scripts.regsetup import description
-
 from app.models.place import Place
 from app.models.review import Review
 from app.persistence.repository import InMemoryRepository
@@ -15,7 +13,20 @@ class HBnBFacade:
 
     def create_user(self, user_data):
         """Create a new user and add it to the repository"""
-        user = User(**user_data)
+        first_name = user_data.get('first_name')
+        last_name = user_data.get('last_name')
+        password = user_data.get('password')
+        email = user_data.get('email')
+        is_admin = user_data.get('is_admin')
+
+        user = User(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password=password,
+            is_admin=is_admin
+        )
+        user.hash_password(password)
         self.user_repo.add(user)
         return user
 
