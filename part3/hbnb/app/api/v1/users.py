@@ -12,6 +12,11 @@ user_model = api.model('User', {
     'email': fields.String(required=True, description='Email of the user')
 })
 
+user_update_model = api.model('UserUpdate', {
+    'first_name': fields.String(description='First name'),
+    'last_name': fields.String(description='Last name')
+})
+
 @api.route('/protected')
 class ProtectedResource(Resource):
     @jwt_required()
@@ -69,14 +74,20 @@ class UserResource(Resource):
             'last_name': user.last_name
         }, 200
 
-    @api.expect(user_model, validate=True)
+    @api.expect(user_update_model, validate=True)
     @api.response(200, 'User successfully updated')
     @api.response(400, 'Invalid input data')
     @api.response(404, 'User not found')
+    @jwt_required()
     def put(self, user_id):
         """Update a user's information"""
+        current_user_id = get_jwt_identity()
         user_data = api.payload
 
+        if user_id != current_user_id:
+            return {'error': 'Unauthorized action'}, 403
+        if 'email' in user_data or 'password' in user_data:
+            return {'error': 'You cannot modify email or password'}, 400
         try:
             updated_user = facade.update_user(user_id, user_data)
             if not updated_user:
@@ -89,3 +100,4 @@ class UserResource(Resource):
             }, 200
         except ValueError as e:
             return {'error': str(e)}, 400
+
