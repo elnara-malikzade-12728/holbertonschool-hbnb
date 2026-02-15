@@ -3,12 +3,13 @@ from app.models.review import Review
 from app.models.user import User
 from app.models.amenity import Amenity
 from app.persistence.repository import SQLAlchemyRepository
+from app.services.repositories.user_repository import UserRepository
 
 
 class HBnBFacade:
     def __init__(self):
         # Use SQLAlchemy repositories (DB-backed)
-        self.user_repo = SQLAlchemyRepository(User)
+        self.user_repo = UserRepository()
         self.place_repo = SQLAlchemyRepository(Place)
         self.review_repo = SQLAlchemyRepository(Review)
         self.amenity_repo = SQLAlchemyRepository(Amenity)
@@ -19,21 +20,20 @@ class HBnBFacade:
     def create_user(self, user_data):
         first_name = user_data.get('first_name')
         last_name = user_data.get('last_name')
-        password = user_data.get('password')
+        raw_password = user_data.get('password')
         email = (user_data.get('email') or "").strip().lower()
         is_admin = bool(user_data.get('is_admin', False))
 
-        # IMPORTANT:
-        # With your updated User model where password setter hashes automatically,
-        # you should NOT call user.hash_password() separately.
+        if not raw_password or len(str(raw_password).strip()) == 0:
+            raise ValueError("Password is required")
         user = User(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            password=password,
+            password=raw_password,
             is_admin=is_admin
         )
-
+        user.hash_password(raw_password)
         self.user_repo.add(user)
         return user
 
@@ -42,7 +42,7 @@ class HBnBFacade:
 
     def get_user_by_email(self, email):
         email = (email or "").strip().lower()
-        return self.user_repo.get_by_attribute("email", email)
+        return self.user_repo.get_user_by_email(email)
 
     def get_all_users(self):
         return self.user_repo.get_all()
