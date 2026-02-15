@@ -5,6 +5,7 @@ from app.models.baseclass import BaseModel  # Import BaseModel from its module
 class User(BaseModel):
     __tablename__ = 'users'
 
+    id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), nullable=False, unique=True)

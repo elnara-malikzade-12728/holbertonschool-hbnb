@@ -1,30 +1,16 @@
-from app.models import Basemodel
+from app import db
+from app.models.baseclass import BaseModel
 
-class Review(Basemodel):
-    def __init__(self, text, rating, place, user):
-        super().__init__()
-        self.text = text
-        self.rating = rating
-        self.place = place     # Reference  to the place
-        self.user = user       # Reference to the user
+class Review(BaseModel):
+    __tablename__ = "reviews"
 
-    @property
-    def text(self):
-        return self._text
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(2048), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)
 
-    @text.setter
-    def text(self, value):
-        # Check if text is None, empty, or just spaces
-        if not value or not value.strip():
-            raise ValueError("Review text cannot be empty")
-        self._text = value
-
-    @property
-    def rating(self):
-        return self._rating
-
-    @rating.setter
-    def rating(self, value):
-        if not (1 <= value <= 5):
-            raise ValueError('Rating must be between 1 and 5')
-        self._rating = value
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "text": self.text,
+            "rating": self.rating,
+        }

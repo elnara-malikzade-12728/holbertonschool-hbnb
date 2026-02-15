@@ -1,7 +1,14 @@
-from app.models import Basemodel
+from app import db
+from app.models.baseclass import BaseModel
 
-class Amenity(Basemodel):
-    def __init__(self, name):
-        super().__init__()
-        self.name = name
+class Amenity(BaseModel):
+    __tablename__ = "amenities"
 
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+        }
