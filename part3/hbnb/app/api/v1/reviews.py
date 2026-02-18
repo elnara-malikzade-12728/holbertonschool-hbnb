@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models import review
 from app.models.review import Review
 from app.services import facade
+from sqlalchemy.orm import relationship
 
 api = Namespace('reviews', description='Review operations')
 

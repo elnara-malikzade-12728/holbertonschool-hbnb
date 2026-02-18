@@ -6,6 +6,8 @@ class Amenity(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
+    # Explicitly link back to the Place model
+    places = db.relationship("Place", secondary="place_amenity", back_populates="amenities")
 
     def to_dict(self):
         return {
