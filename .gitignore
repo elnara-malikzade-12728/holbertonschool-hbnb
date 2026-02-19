@@ -1,5 +1,14 @@
-﻿.idea/
+﻿# Database
+*.db
+
+# Environments
+.venv/
+.env          <-- Add this for security
+
+# Python
 __pycache__/
 *.pyc
-.venv/
-venv/
+
+# IDEs
+.idea/
+.vscode/      <-- Add this if you use VS Code
