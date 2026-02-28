@@ -1,6 +1,14 @@
-﻿*.db
-.idea/
+# Database
+*.db
+
+# Environments
+.venv/
+.env
+
+# Python
 __pycache__/
 *.pyc
-.venv/
-venv/
+
+# IDEs
+.idea/
+.vscode/
