@@ -20,6 +20,8 @@ class Place(BaseModel):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     reviews = db.relationship("Review", backref="place", lazy="dynamic", cascade="all, delete-orphan")
 
+    amenities = db.relationship("Amenity", secondary=place_amenity, back_populates="places")
+
     def to_dict(self):
         return {
             "id": self.id,

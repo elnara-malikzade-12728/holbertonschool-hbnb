@@ -26,11 +26,11 @@ class HBnBFacade:
 
         if not raw_password or len(str(raw_password).strip()) == 0:
             raise ValueError("Password is required")
+
         user = User(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            password=raw_password,
             is_admin=is_admin
         )
         user.hash_password(raw_password)
@@ -48,11 +48,30 @@ class HBnBFacade:
         return self.user_repo.get_all()
 
     def update_user(self, user_id, user_data):
+        """
+        Normalize email, and if password is included, hash it before saving.
+        This prevents storing plain-text passwords which causes login failures and/or Invalid salt.
+        """
+        if not user_data:
+            return self.user_repo.update(user_id, user_data)
+
         # normalize email if included
         if "email" in user_data and user_data["email"] is not None:
             user_data["email"] = user_data["email"].strip().lower()
 
-        # This triggers User.password setter hashing (if your model has it)
+        # hash password if included
+        if "password" in user_data and user_data["password"] is not None:
+            raw_password = user_data["password"]
+            if not raw_password or len(str(raw_password).strip()) == 0:
+                raise ValueError("Password cannot be empty")
+
+            user = self.get_user(user_id)
+            if not user:
+                return None
+
+            user.hash_password(raw_password)
+            user_data["password"] = user.password  # store hashed value
+
         updated = self.user_repo.update(user_id, user_data)
         return updated
 
@@ -91,7 +110,6 @@ class HBnBFacade:
         )
 
         # amenities linking will only work after relationships are mapped
-        # (next tasks). Keep structure for now.
         amenity_ids = place_data.get('amenities', [])
         if isinstance(amenity_ids, list):
             for aid in amenity_ids:

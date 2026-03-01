@@ -16,13 +16,50 @@ const REVIEWS = {
   3: []
 };
 
-// ---------- Helpers ----------
-function isLoggedIn() {
-  return Boolean(localStorage.getItem("access_token"));
+// ---------- Cookies ----------
+function setCookie(name, value, days = 1) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
 }
 
-function getCurrentPath() {
-  return window.location.pathname;
+function getCookie(name) {
+  return document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(name + "="))
+    ?.split("=")[1];
+}
+
+function deleteCookie(name) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+}
+
+function isLoggedIn() {
+  return Boolean(getCookie("token"));
+}
+
+// ---------- API ----------
+async function loginUser(email, password) {
+  const response = await fetch("/api/v1/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (_) {
+    // API might not return JSON; ignore
+  }
+
+  if (!response.ok) {
+    const msg = data?.message || data?.error || response.statusText || "Login failed";
+    throw new Error(msg);
+  }
+
+  const token = data.access_token || data.token;
+  if (!token) throw new Error("Token not found in response");
+  return token;
 }
 
 // ---------- INDEX PAGE ----------
@@ -40,20 +77,11 @@ function initIndexPage() {
       const card = document.createElement("article");
       card.className = "place-card";
 
-      const title = document.createElement("h2");
-      title.textContent = place.name;
-
-      const price = document.createElement("p");
-      price.textContent = `Price per night: $${place.price}`;
-
-      const btn = document.createElement("a");
-      btn.className = "details-button";
-      btn.textContent = "View Details";
-      btn.href = `/place/${place.id}`; // IMPORTANT: your web route is /place/<place_id>
-
-      card.appendChild(title);
-      card.appendChild(price);
-      card.appendChild(btn);
+      card.innerHTML = `
+        <h2>${place.name}</h2>
+        <p>Price per night: $${place.price}</p>
+        <a class="details-button" href="/place/${place.id}">View Details</a>
+      `;
 
       placesList.appendChild(card);
     });
@@ -70,7 +98,7 @@ function initPlacePage() {
   const addReviewCta = document.getElementById("add-review-cta");
   if (!detailsEl || !reviewsEl) return;
 
-  const placeId = detailsEl.dataset.placeId || null;
+  const placeId = detailsEl.dataset.placeId;
   const idNum = Number(placeId);
 
   const place = PLACES.find((p) => p.id === idNum);
@@ -108,20 +136,25 @@ function initPlacePage() {
     });
   }
 
-  // Only show "Add Review" button if user is logged in
+  // CTA behavior
   if (addReviewCta) {
-    addReviewCta.style.display = isLoggedIn() ? "block" : "none";
+    if (isLoggedIn()) {
+      addReviewCta.style.display = "inline-block";
+      addReviewCta.href = `/place/${idNum}/review`; // matches your Flask route
+    } else {
+      addReviewCta.style.display = "none";
+    }
   }
 }
 
-// ---------- LOGIN PAGE ----------
+// ---------- LOGIN PAGE (TASK REQUIREMENT) ----------
 function initLoginPage() {
   const form = document.getElementById("login-form");
   const errorEl = document.getElementById("login-error");
   if (!form) return;
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault(); // REQUIRED
     if (errorEl) errorEl.textContent = "";
 
     const email = document.getElementById("email")?.value?.trim();
@@ -132,32 +165,19 @@ function initLoginPage() {
       return;
     }
 
-    // If you have a real API, uncomment this fetch and adjust to your backend response.
     try {
-      const res = await fetch("/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
+      const token = await loginUser(email, password);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        if (errorEl) errorEl.textContent = data.message || "Login failed.";
-        return;
-      }
+      // Store JWT token in cookie (REQUIRED)
+      setCookie("token", token, 1);
 
-      const data = await res.json();
-      // common names: access_token / token
-      const token = data.access_token || data.token;
-      if (!token) {
-        if (errorEl) errorEl.textContent = "Login succeeded but token missing.";
-        return;
-      }
-
-      localStorage.setItem("access_token", token);
+      // Redirect to main page after login (REQUIRED)
       window.location.href = "/";
     } catch (err) {
-      if (errorEl) errorEl.textContent = "Network error. Try again.";
+      // Display error message (REQUIRED)
+      const msg = err?.message || "Login failed";
+      if (errorEl) errorEl.textContent = `Login failed: ${msg}`;
+      else alert(`Login failed: ${msg}`);
     }
   });
 }
@@ -168,7 +188,6 @@ function initAddReviewPage() {
   const errorEl = document.getElementById("review-error");
   if (!form) return;
 
-  // Must be authenticated
   if (!isLoggedIn()) {
     window.location.href = "/login";
     return;
@@ -187,13 +206,12 @@ function initAddReviewPage() {
       return;
     }
 
-    // UI-only success (you can wire to API later)
-    alert("Review submitted (UI only). Now wire this to your /api/v1/reviews endpoint.");
+    alert("Review submitted (UI only). Next: POST to /api/v1/reviews/ with token.");
     window.location.href = `/place/${placeId}`;
   });
 }
 
-// ---------- Boot ----------
+// ---------- Boot (single) ----------
 document.addEventListener("DOMContentLoaded", () => {
   initIndexPage();
   initPlacePage();
