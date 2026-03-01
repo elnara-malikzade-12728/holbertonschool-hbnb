@@ -18,11 +18,11 @@ class HBnBFacade:
     # Users
     # -------------------------
     def create_user(self, user_data):
-        first_name = user_data.get('first_name')
-        last_name = user_data.get('last_name')
-        raw_password = user_data.get('password')
-        email = (user_data.get('email') or "").strip().lower()
-        is_admin = bool(user_data.get('is_admin', False))
+        first_name = user_data.get("first_name")
+        last_name = user_data.get("last_name")
+        raw_password = user_data.get("password")
+        email = (user_data.get("email") or "").strip().lower()
+        is_admin = bool(user_data.get("is_admin", False))
 
         if not raw_password or len(str(raw_password).strip()) == 0:
             raise ValueError("Password is required")
@@ -79,7 +79,7 @@ class HBnBFacade:
     # Amenities
     # -------------------------
     def create_amenity(self, amenity_data):
-        new_amenity = Amenity(name=amenity_data.get('name'))
+        new_amenity = Amenity(name=amenity_data.get("name"))
         self.amenity_repo.add(new_amenity)
         return new_amenity
 
@@ -96,26 +96,29 @@ class HBnBFacade:
     # Places
     # -------------------------
     def create_place(self, place_data):
-        owner = self.get_user(place_data['owner_id'])
+        # Accept both keys to be safe
+        owner_id = place_data.get("owner_id") or place_data.get("user_id")
+        if not owner_id:
+            raise ValueError("Owner id is required")
+
+        owner = self.get_user(owner_id)
         if not owner:
             raise ValueError("Owner not found")
 
+        # ✅ With Place.owner relationship, we can set owner directly
         new_place = Place(
-            title=place_data['title'],
-            description=place_data.get('description'),
-            price=place_data['price'],
-            latitude=place_data['latitude'],
-            longitude=place_data['longitude'],
-            owner=owner
+            title=place_data["title"],
+            description=place_data.get("description"),
+            price=place_data["price"],
+            latitude=place_data["latitude"],
+            longitude=place_data["longitude"],
+            owner=owner  # sets user_id automatically via relationship
         )
 
-        # amenities linking will only work after relationships are mapped
-        amenity_ids = place_data.get('amenities', [])
-        if isinstance(amenity_ids, list):
-            for aid in amenity_ids:
-                amenity_obj = self.get_amenity(aid)
-                if amenity_obj:
-                    new_place.add_amenity(amenity_obj)
+        for amenity_id in place_data.get("amenities", []):
+            amenity = self.get_amenity(amenity_id)
+            if amenity:
+                new_place.amenities.append(amenity)
 
         self.place_repo.add(new_place)
         return new_place
@@ -127,22 +130,23 @@ class HBnBFacade:
         return self.place_repo.get_all()
 
     def update_place(self, place_id, place_data):
-        # prevent ownership changes via update (optional safety)
+        # prevent ownership changes
         place_data.pop("owner_id", None)
+        place_data.pop("user_id", None)
         return self.place_repo.update(place_id, place_data)
 
     # -------------------------
     # Reviews
     # -------------------------
     def create_review(self, review_data):
-        user = self.get_user(review_data['user_id'])
-        place = self.get_place(review_data['place_id'])
+        user = self.get_user(review_data["user_id"])
+        place = self.get_place(review_data["place_id"])
         if not user or not place:
             return None
 
         new_review = Review(
-            text=review_data['text'],
-            rating=review_data['rating'],
+            text=review_data["text"],
+            rating=review_data["rating"],
             user=user,
             place=place
         )

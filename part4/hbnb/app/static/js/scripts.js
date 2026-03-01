@@ -77,9 +77,7 @@ async function loginUser(email, password) {
 
 async function fetchPlaces(token) {
   const headers = {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${decodeURIComponent(token)}`;
-  }
+  if (token) headers["Authorization"] = `Bearer ${decodeURIComponent(token)}`;
 
   const response = await fetch("/api/v1/places/", { headers });
 
@@ -91,8 +89,40 @@ async function fetchPlaces(token) {
     throw new Error(msg);
   }
 
-  // Your API likely returns a list
   return Array.isArray(data) ? data : (data.places || []);
+}
+
+async function fetchPlaceById(token, placeId) {
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${decodeURIComponent(token)}`;
+
+  const resp = await fetch(`/api/v1/places/${placeId}`, { headers });
+
+  let data = {};
+  try { data = await resp.json(); } catch (_) {}
+
+  if (!resp.ok) {
+    const msg = data?.error || data?.message || resp.statusText || "Failed to fetch place details";
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function fetchReviewsForPlace(token, placeId) {
+  // Try a common pattern: /api/v1/reviews/?place_id=<id>
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${decodeURIComponent(token)}`;
+
+  const resp = await fetch(`/api/v1/reviews/?place_id=${encodeURIComponent(placeId)}`, { headers });
+
+  let data = {};
+  try { data = await resp.json(); } catch (_) {}
+
+  if (!resp.ok) {
+    // Don't hard-fail the whole page if reviews endpoint isn't ready
+    return [];
+  }
+  return Array.isArray(data) ? data : (data.reviews || []);
 }
 
 // ---------- INDEX PAGE (TASK REQUIREMENT) ----------
@@ -119,7 +149,6 @@ function ensurePriceFilterOptions(priceFilter) {
 }
 
 function normalizePlace(p) {
-  // Support both API fields (title) and your old fake data (name)
   return {
     id: p.id,
     title: p.title || p.name || "Untitled place",
@@ -180,87 +209,150 @@ async function initIndexPage() {
   const priceFilter = document.getElementById("price-filter");
   if (!placesList || !priceFilter) return;
 
-  // 1) auth check: show/hide login link
   const token = checkAuthentication();
-
-  // 2) enforce dropdown options required by task
   ensurePriceFilterOptions(priceFilter);
 
-  // 3) fetch places from API, fallback to fake data if API fails
   try {
     const apiPlaces = await fetchPlaces(token);
     __placesCache = apiPlaces;
     displayPlaces(__placesCache);
   } catch (err) {
-    // fallback so UI still works
     __placesCache = PLACES;
     displayPlaces(__placesCache);
-
-    // Optional: show a small warning message (non-blocking)
-    // placesList.insertAdjacentHTML("afterbegin", `<p class="form-error">API not available, showing sample data.</p>`);
   }
 
-  // 4) client-side filter (no reload)
-  priceFilter.addEventListener("change", (e) => {
-    applyPriceFilter(e.target.value);
-  });
-
-  // default apply
+  priceFilter.addEventListener("change", (e) => applyPriceFilter(e.target.value));
   applyPriceFilter(priceFilter.value);
 }
 
-// ---------- PLACE DETAILS PAGE (still uses fake data for now) ----------
-function initPlacePage() {
+// ---------- PLACE DETAILS PAGE (TASK REQUIREMENT now) ----------
+function getPlaceIdFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
+}
+
+function getPlaceIdFromPage() {
+  const detailsEl = document.getElementById("place-details");
+  return detailsEl?.dataset?.placeId || null;
+}
+
+function normalizeAmenity(a) {
+  if (!a) return "";
+  if (typeof a === "string") return a;
+  return a.name || "";
+}
+
+function normalizeReview(r) {
+  const comment = r?.text || r?.comment || "";
+  const rating = r?.rating ?? "";
+  const user =
+    r?.user?.first_name
+      ? `${r.user.first_name} ${r.user.last_name || ""}`.trim()
+      : (r?.user || r?.user_name || "Anonymous");
+  return { comment, rating, user };
+}
+
+async function initPlacePage() {
   const detailsEl = document.getElementById("place-details");
   const reviewsEl = document.getElementById("reviews");
   const addReviewCta = document.getElementById("add-review-cta");
+  const addReviewSection = document.getElementById("add-review"); // if your HTML has wrapper
   if (!detailsEl || !reviewsEl) return;
 
-  const placeId = detailsEl.dataset.placeId;
-  const idNum = Number(placeId);
-
-  const place = PLACES.find((p) => p.id === idNum);
-
-  if (!place) {
-    detailsEl.innerHTML = "<p>Place not found.</p>";
+  // 1) place id from dataset OR query string
+  const placeId = getPlaceIdFromPage() || getPlaceIdFromURL();
+  if (!placeId) {
+    detailsEl.innerHTML = "<p>Missing place id.</p>";
     return;
   }
 
-  detailsEl.innerHTML = `
-    <h1>${place.name}</h1>
-    <div class="place-info">
-      <p><strong>Host:</strong> ${place.host}</p>
-      <p><strong>Price per night:</strong> $${place.price}</p>
-      <p><strong>Description:</strong> ${place.description}</p>
-      <p><strong>Amenities:</strong> ${place.amenities.join(", ")}</p>
-    </div>
-  `;
+  // 2) auth check for add review visibility and token usage
+  const token = getCookie("token");
+  const loggedIn = Boolean(token);
 
-  const list = REVIEWS[idNum] || [];
-  reviewsEl.innerHTML = "";
+  if (addReviewSection) addReviewSection.style.display = loggedIn ? "block" : "none";
+  if (addReviewCta) addReviewCta.style.display = loggedIn ? "inline-block" : "none";
+  if (addReviewCta && loggedIn) addReviewCta.href = `/place/${placeId}/review`;
 
-  if (list.length === 0) {
-    reviewsEl.innerHTML = `<p class="muted">No reviews yet.</p>`;
-  } else {
-    list.forEach((r) => {
-      const card = document.createElement("article");
-      card.className = "review-card";
-      card.innerHTML = `
-        <p>${r.comment}</p>
-        <p class="muted">— ${r.user}</p>
-        <p class="rating">Rating: ${r.rating}/5</p>
-      `;
-      reviewsEl.appendChild(card);
-    });
-  }
+  // 3) fetch details from API (fallback to fake data if fails)
+  try {
+    const place = await fetchPlaceById(token, placeId);
 
-  // CTA behavior
-  if (addReviewCta) {
-    if (isLoggedIn()) {
-      addReviewCta.style.display = "inline-block";
-      addReviewCta.href = `/place/${idNum}/review`; // matches your Flask route
+    const title = place.title || place.name || "Untitled place";
+    const description = place.description || "";
+    const price = place.price ?? "N/A";
+    const amenities = Array.isArray(place.amenities) ? place.amenities : [];
+    const amenitiesText = amenities.map(normalizeAmenity).filter(Boolean).join(", ") || "—";
+
+    detailsEl.innerHTML = `
+      <h1>${title}</h1>
+      <div class="place-info">
+        <p><strong>Description:</strong> ${description || "—"}</p>
+        <p><strong>Price per night:</strong> $${price}</p>
+        <p><strong>Amenities:</strong> ${amenitiesText}</p>
+      </div>
+    `;
+
+    // Reviews: if backend embeds place.reviews use that, otherwise call endpoint
+    let reviews = [];
+    if (Array.isArray(place.reviews)) {
+      reviews = place.reviews;
     } else {
-      addReviewCta.style.display = "none";
+      reviews = await fetchReviewsForPlace(token, placeId);
+    }
+
+    reviewsEl.innerHTML = "";
+    if (!reviews || reviews.length === 0) {
+      reviewsEl.innerHTML = `<p class="muted">No reviews yet.</p>`;
+    } else {
+      reviews.forEach((r) => {
+        const rr = normalizeReview(r);
+        const card = document.createElement("article");
+        card.className = "review-card";
+        card.innerHTML = `
+          <p>${rr.comment}</p>
+          <p class="muted">— ${rr.user}</p>
+          <p class="rating">Rating: ${rr.rating}/5</p>
+        `;
+        reviewsEl.appendChild(card);
+      });
+    }
+  } catch (err) {
+    // fallback to fake data for UI
+    const idNum = Number(placeId);
+    const fallback = PLACES.find((p) => p.id === idNum);
+
+    if (!fallback) {
+      detailsEl.innerHTML = `<p class="form-error">${err.message}</p>`;
+      reviewsEl.innerHTML = "";
+      return;
+    }
+
+    detailsEl.innerHTML = `
+      <h1>${fallback.name}</h1>
+      <div class="place-info">
+        <p><strong>Host:</strong> ${fallback.host}</p>
+        <p><strong>Price per night:</strong> $${fallback.price}</p>
+        <p><strong>Description:</strong> ${fallback.description}</p>
+        <p><strong>Amenities:</strong> ${fallback.amenities.join(", ")}</p>
+      </div>
+    `;
+
+    const list = REVIEWS[idNum] || [];
+    reviewsEl.innerHTML = "";
+    if (list.length === 0) {
+      reviewsEl.innerHTML = `<p class="muted">No reviews yet.</p>`;
+    } else {
+      list.forEach((r) => {
+        const card = document.createElement("article");
+        card.className = "review-card";
+        card.innerHTML = `
+          <p>${r.comment}</p>
+          <p class="muted">— ${r.user}</p>
+          <p class="rating">Rating: ${r.rating}/5</p>
+        `;
+        reviewsEl.appendChild(card);
+      });
     }
   }
 }
@@ -272,7 +364,7 @@ function initLoginPage() {
   if (!form) return;
 
   form.addEventListener("submit", async (event) => {
-    event.preventDefault(); // REQUIRED
+    event.preventDefault();
     if (errorEl) errorEl.textContent = "";
 
     const email = document.getElementById("email")?.value?.trim();
@@ -285,14 +377,9 @@ function initLoginPage() {
 
     try {
       const token = await loginUser(email, password);
-
-      // Store JWT token in cookie (REQUIRED)
       setCookie("token", token, 1);
-
-      // Redirect to main page after login (REQUIRED)
       window.location.href = "/";
     } catch (err) {
-      // Display error message (REQUIRED)
       const msg = err?.message || "Login failed";
       if (errorEl) errorEl.textContent = `Login failed: ${msg}`;
       else alert(`Login failed: ${msg}`);
