@@ -22,11 +22,17 @@ function setCookie(name, value, days = 1) {
   document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
 }
 
+// UPDATED: safer cookie parsing (handles tokens containing '=')
 function getCookie(name) {
-  return document.cookie
-    .split("; ")
-    .find((row) => row.startsWith(name + "="))
-    ?.split("=")[1];
+  const cookieStr = document.cookie;
+  if (!cookieStr) return null;
+
+  const cookies = cookieStr.split("; ").map((c) => c.trim());
+  for (const c of cookies) {
+    const [key, ...rest] = c.split("=");
+    if (key === name) return rest.join("="); // keep '=' inside the value
+  }
+  return null;
 }
 
 function deleteCookie(name) {
@@ -35,6 +41,16 @@ function deleteCookie(name) {
 
 function isLoggedIn() {
   return Boolean(getCookie("token"));
+}
+
+// ✅ NEW: token cleaner (removes accidental quotes, trims)
+function getAuthToken() {
+  const raw = getCookie("token");
+  if (!raw) return null;
+
+  // remove quotes if stored like "eyJ..."
+  const cleaned = raw.replace(/^"|"$/g, "").trim();
+  return cleaned || null;
 }
 
 // ---------- UI auth (show/hide login link) ----------
@@ -225,12 +241,23 @@ async function initIndexPage() {
   applyPriceFilter(priceFilter.value);
 }
 
-// ---------- PLACE DETAILS PAGE (TASK REQUIREMENT now) ----------
+// ---------- Place ID helpers ----------
 function getPlaceIdFromURL() {
   const params = new URLSearchParams(window.location.search);
-  return params.get("id");
+  return params.get("id") || params.get("place_id");
 }
 
+// supports /place/<id>/review and /place/<id>/review/
+function getPlaceIdFromURLForReview() {
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get("id") || params.get("place_id");
+  if (fromQuery) return fromQuery;
+
+  const match = window.location.pathname.match(/^\/place\/([^/]+)\/review\/?$/);
+  return match ? match[1] : null;
+}
+
+// ---------- PLACE DETAILS PAGE ----------
 function getPlaceIdFromPage() {
   const detailsEl = document.getElementById("place-details");
   return detailsEl?.dataset?.placeId || null;
@@ -259,14 +286,12 @@ async function initPlacePage() {
   const addReviewSection = document.getElementById("add-review"); // if your HTML has wrapper
   if (!detailsEl || !reviewsEl) return;
 
-  // 1) place id from dataset OR query string
   const placeId = getPlaceIdFromPage() || getPlaceIdFromURL();
   if (!placeId) {
     detailsEl.innerHTML = "<p>Missing place id.</p>";
     return;
   }
 
-  // 2) auth check for add review visibility and token usage
   const token = getCookie("token");
   const loggedIn = Boolean(token);
 
@@ -274,7 +299,6 @@ async function initPlacePage() {
   if (addReviewCta) addReviewCta.style.display = loggedIn ? "inline-block" : "none";
   if (addReviewCta && loggedIn) addReviewCta.href = `/place/${placeId}/review`;
 
-  // 3) fetch details from API (fallback to fake data if fails)
   try {
     const place = await fetchPlaceById(token, placeId);
 
@@ -293,7 +317,6 @@ async function initPlacePage() {
       </div>
     `;
 
-    // Reviews: if backend embeds place.reviews use that, otherwise call endpoint
     let reviews = [];
     if (Array.isArray(place.reviews)) {
       reviews = place.reviews;
@@ -318,7 +341,6 @@ async function initPlacePage() {
       });
     }
   } catch (err) {
-    // fallback to fake data for UI
     const idNum = Number(placeId);
     const fallback = PLACES.find((p) => p.id === idNum);
 
@@ -387,37 +409,101 @@ function initLoginPage() {
   });
 }
 
-// ---------- ADD REVIEW PAGE ----------
+// ---------- ADD REVIEW PAGE (TASK REQUIREMENT) ----------
+async function submitReview(token, placeId, reviewText, rating) {
+  const jwt = decodeURIComponent(token);
+
+  const resp = await fetch("/api/v1/reviews/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwt}`
+    },
+    body: JSON.stringify({
+      place_id: placeId,
+      text: reviewText,
+      rating: Number(rating)
+    })
+  });
+
+  let data = {};
+  try { data = await resp.json(); } catch (_) {}
+
+  if (resp.status === 401) {
+    deleteCookie("token");
+    throw new Error("UNAUTHORIZED");
+  }
+
+  if (!resp.ok) {
+    const msg = data?.message || data?.error || resp.statusText || "Failed to submit review";
+    throw new Error(msg);
+  }
+
+  return data;
+}
+
 function initAddReviewPage() {
   const form = document.getElementById("review-form");
   const errorEl = document.getElementById("review-error");
+  const successEl = document.getElementById("review-success");
   if (!form) return;
 
-  if (!isLoggedIn()) {
-    window.location.href = "/login";
+  const token = getAuthToken();
+  if (!token) {
+    window.location.href = "/index.html";
     return;
   }
 
+  const placeId = getPlaceIdFromURLForReview();
+  if (!placeId) {
+    const msg = "Missing place id in URL.";
+    if (errorEl) errorEl.textContent = msg;
+    else alert(msg);
+    return;
+  }
+
+  form.dataset.placeId = placeId;
+  form.setAttribute("action", "#");
+  form.setAttribute("method", "post");
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (errorEl) errorEl.textContent = "";
 
-    const placeId = form.dataset.placeId;
-    const comment = document.getElementById("review")?.value?.trim();
+    if (errorEl) errorEl.textContent = "";
+    if (successEl) successEl.textContent = "";
+
+    const reviewText = document.getElementById("review")?.value?.trim();
     const rating = document.getElementById("rating")?.value;
 
-    if (!comment || !rating) {
+    if (!reviewText || !rating) {
       if (errorEl) errorEl.textContent = "Review and rating are required.";
       return;
     }
 
-    alert("Review submitted (UI only). Next: POST to /api/v1/reviews/ with token.");
-    window.location.href = `/place/${placeId}`;
+    try {
+      await submitReview(token, placeId, reviewText, rating);
+      if (successEl) successEl.textContent = "Review submitted successfully!";
+        else alert("Review submitted successfully!");
+        // Optional: redirect to place details (best UX)
+        window.location.href = `/place/${placeId}`;
+
+      // window.location.href = `/place/${placeId}`;
+    } catch (err) {
+      const msg = err?.message || "Failed to submit review.";
+
+      if (msg === "UNAUTHORIZED") {
+        window.location.href = "/";
+        return;
+      }
+
+      if (errorEl) errorEl.textContent = msg;
+    }
   });
 }
 
 // ---------- Boot (single) ----------
 document.addEventListener("DOMContentLoaded", () => {
+  checkAuthentication();
   initIndexPage();
   initPlacePage();
   initLoginPage();
