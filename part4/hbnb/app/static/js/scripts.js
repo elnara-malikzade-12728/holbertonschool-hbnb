@@ -43,7 +43,6 @@ function isLoggedIn() {
   return Boolean(getCookie("token"));
 }
 
-// ✅ NEW: token cleaner (removes accidental quotes, trims)
 function getAuthToken() {
   const raw = getCookie("token");
   if (!raw) return null;

@@ -11,8 +11,7 @@ class User(BaseModel):
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
 
-    # ✅ must match Place.owner back_populates="places"
-    # ✅ removed backref="user" because it conflicts with having owner
+
     places = db.relationship(
         "Place",
         back_populates="owner",
@@ -34,3 +33,13 @@ class User(BaseModel):
     def verify_password(self, password):
         """Verify the hashed password."""
         return bcrypt.check_password_hash(self.password, password)
+
+    def to_dict(self):
+        """Return a dict representation of the object."""
+        return {
+            "id": self.id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "is_admin": self.is_admin,
+        }

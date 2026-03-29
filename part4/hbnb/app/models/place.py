@@ -18,10 +18,8 @@ class Place(BaseModel):
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
 
-    # ✅ keep this only (matches DB)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
-    # ✅ owner relationship uses user_id FK
     owner = db.relationship(
         "User",
         back_populates="places",
@@ -66,11 +64,15 @@ class Place(BaseModel):
             ]
 
         if include_reviews:
-            # reviews is lazy="dynamic" => call .all()
-            all_reviews = self.reviews.all() if hasattr(self.reviews, "all") else (self.reviews or [])
+            all_reviews = self.reviews.all()
             data["reviews"] = [
-                {"id": r.id, "text": r.text, "rating": r.rating, "user_id": r.user_id}
+                {
+                    "id": r.id,
+                    "text": r.text,
+                    "rating": r.rating,
+                    "user_id": r.user_id,
+                    "user_name": f"{r.user.first_name} {r.user.last_name}"
+                }
                 for r in all_reviews
             ]
-
         return data

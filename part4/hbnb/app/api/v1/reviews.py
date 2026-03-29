@@ -4,7 +4,6 @@ from app.services import facade
 
 api = Namespace('reviews', description='Review operations')
 
-# ✅ Client sends ONLY text, rating, place_id
 # user_id comes from JWT token (so no spoofing)
 review_model = api.model('Review', {
     'text': fields.String(required=True, description='Text of the review'),
